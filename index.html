@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veille Marchés — Symbiose</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#F7F7F5;--surface:#FFFFFF;--border:#E2E2DE;--text:#1A1A18;--muted:#7A7A74;
+    --score-high:#1C7A4A;--score-mid:#B45309;--score-low:#6B7280;
+    --tag-etude:#EEF2FF;--tag-etude-t:#3730A3;--tag-amo:#FFF7ED;--tag-amo-t:#9A3412;
+    --tag-compens:#F0FDF4;--tag-compens-t:#166534;--tag-diag:#FDF4FF;--tag-diag-t:#6B21A8;
+    --tag-travaux:#FFFBEB;--tag-travaux-t:#92400E;--tag-autre:#F9FAFB;--tag-autre-t:#374151;
+    --urg-haute:#FEE2E2;--urg-haute-t:#991B1B;--urg-moy:#FEF3C7;--urg-moy-t:#92400E;
+    --urg-fai:#F0FDF4;--urg-fai-t:#166534;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+  header{background:var(--text);color:#fff;padding:28px 40px 0}
+  .header-top{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding-bottom:20px}
+  .header-left h1{font-size:18px;font-weight:600;letter-spacing:-0.01em}
+  .header-left p{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.45);margin-top:4px;letter-spacing:0.04em;text-transform:uppercase}
+  .header-stats{display:flex;gap:32px;text-align:right}
+  .stat-block span{display:block;font-family:'IBM Plex Mono',monospace}
+  .stat-val{font-size:28px;font-weight:500;letter-spacing:-0.02em;color:#fff}
+  .stat-lbl{font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+  .tabs{display:flex;border-top:1px solid rgba(255,255,255,0.12)}
+  .tab-btn{font-family:'IBM Plex Sans',sans-serif;font-size:13px;padding:12px 24px;border:none;background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+  .tab-btn:hover{color:rgba(255,255,255,0.8)}
+  .tab-btn.active{color:#fff;border-bottom-color:#fff}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+  .toolbar{padding:16px 40px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;z-index:10}
+  .toolbar-label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px}
+  .filter-btn{font-family:'IBM Plex Sans',sans-serif;font-size:12px;padding:5px 12px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+  .filter-btn:hover,.filter-btn.active{background:var(--text);color:#fff;border-color:var(--text)}
+  .sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+  main{padding:28px 40px 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px}
+  .empty-state{grid-column:1/-1;text-align:center;padding:80px 0;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:14px;transition:box-shadow .15s,transform .15s}
+  .card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.07);transform:translateY(-1px)}
+  .card[data-hidden="true"]{display:none}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .card-badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{font-size:10px;font-weight:500;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap}
+  .badge-etude{background:var(--tag-etude);color:var(--tag-etude-t)}
+  .badge-amo{background:var(--tag-amo);color:var(--tag-amo-t)}
+  .badge-compens{background:var(--tag-compens);color:var(--tag-compens-t)}
+  .badge-diag{background:var(--tag-diag);color:var(--tag-diag-t)}
+  .badge-travaux{background:var(--tag-travaux);color:var(--tag-travaux-t)}
+  .badge-autre{background:var(--tag-autre);color:var(--tag-autre-t)}
+  .badge-urg-haute{background:var(--urg-haute);color:var(--urg-haute-t)}
+  .badge-urg-moy{background:var(--urg-moy);color:var(--urg-moy-t)}
+  .badge-urg-fai{background:var(--urg-fai);color:var(--urg-fai-t)}
+  .badge-compens-boost{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+  .score-ring{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;min-width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+  .score-ring::after{content:'/10';font-size:8px;position:absolute;bottom:6px;right:4px;opacity:0.6}
+  .score-high{background:#DCFCE7;color:var(--score-high)}
+  .score-mid{background:#FEF3C7;color:var(--score-mid)}
+  .score-low{background:#F3F4F6;color:var(--score-low)}
+  .card-objet{font-size:13px;font-weight:500;line-height:1.45}
+  .card-acheteur{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .card-acheteur::before{content:'';display:inline-block;width:4px;height:4px;background:var(--border);border-radius:50%;flex-shrink:0}
+  .card-resume{font-size:12px;color:#4A4A46;line-height:1.55;padding:10px 12px;background:var(--bg);border-radius:4px;border-left:2px solid var(--border)}
+  .card-alert{font-size:11px;color:#92400E;background:#FFFBEB;border-radius:4px;padding:8px 10px;display:flex;gap:6px;align-items:flex-start}
+  .card-alert::before{content:'⚠';flex-shrink:0}
+  .card-meta{display:flex;gap:16px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border);justify-content:space-between;align-items:center}
+  .meta-item{display:flex;flex-direction:column;gap:1px}
+  .meta-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)}
+  .meta-val{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500}
+  .card-link{font-size:11px;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:4px 10px;border-radius:4px;transition:all .12s;white-space:nowrap}
+  .card-link:hover{background:var(--text);color:#fff;border-color:var(--text)}
+
+  /* DCE */
+  .dce-container{max-width:760px;margin:0 auto;padding:32px 40px 60px}
+  .dce-intro{margin-bottom:24px}
+  .dce-intro h2{font-size:16px;font-weight:600;margin-bottom:6px}
+  .dce-intro p{font-size:13px;color:var(--muted)}
+  .key-row{display:flex;gap:8px;margin-bottom:6px;align-items:stretch}
+  .key-row input{flex:1;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)}
+  .key-row input:focus{outline:none;border-color:var(--text)}
+  .btn-save{font-family:'IBM Plex Sans',sans-serif;font-size:12px;padding:8px 14px;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;white-space:nowrap;transition:all .12s}
+  .btn-save:hover{background:var(--text);color:#fff;border-color:var(--text)}
+  .key-status{font-size:11px;font-family:'IBM Plex Mono',monospace}
+  .key-ok{color:#1C7A4A}.key-missing{color:#991B1B}
+  .drop-zone{border:1.5px dashed var(--border);border-radius:6px;padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;background:var(--bg);margin-bottom:12px}
+  .drop-zone:hover,.drop-zone.drag-over{border-color:var(--text);background:var(--surface)}
+  .drop-zone input{display:none}
+  .drop-icon{font-size:24px;margin-bottom:8px}
+  .drop-title{font-size:14px;font-weight:500;margin-bottom:4px}
+  .drop-sub{font-size:12px;color:var(--muted)}
+  .file-list-dce{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .file-item-dce{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:8px 12px;font-size:13px}
+  .file-name-dce{flex:1;font-weight:500}
+  .file-size-dce{color:var(--muted);font-size:12px;font-family:'IBM Plex Mono',monospace}
+  .file-rm{cursor:pointer;color:var(--muted);font-size:14px;border:none;background:none;padding:0 2px}
+  .file-rm:hover{color:#991B1B}
+  .btn-analyze{width:100%;padding:11px;background:var(--text);color:#fff;border:none;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s;margin-bottom:20px}
+  .btn-analyze:hover{opacity:.85}
+  .btn-analyze:disabled{opacity:.4;cursor:not-allowed}
+  .dce-progress{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:20px;font-size:13px}
+  .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .dce-error{background:#FEE2E2;color:#991B1B;border-radius:4px;padding:12px 16px;font-size:13px;margin-bottom:16px}
+  .dce-results{display:flex;flex-direction:column;gap:12px}
+  .res-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .res-hdr{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+  .res-hdr:hover{background:var(--bg)}
+  .res-num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px}
+  .n1{background:#EEF2FF;color:#3730A3}.n2{background:#F0FDF4;color:#166534}
+  .n3{background:#FFFBEB;color:#92400E}.n4{background:#FDF4FF;color:#6B21A8}
+  .res-title{font-size:13px;font-weight:500;flex:1}
+  .res-chev{font-size:11px;color:var(--muted);transition:transform .2s}
+  .res-chev.open{transform:rotate(180deg)}
+  .res-body{padding:16px;font-size:13px;line-height:1.65}
+  .res-body.hidden{display:none}
+  .sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .si{background:var(--bg);border-radius:4px;padding:10px 12px}
+  .sl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:3px}
+  .sv{font-size:13px;font-weight:500}
+  .cr{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .cn{font-size:12px;min-width:200px}
+  .cb{flex:1;height:4px;background:var(--border);border-radius:2px}
+  .cbf{height:4px;background:var(--text);border-radius:2px}
+  .cp{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;min-width:36px;text-align:right}
+  .ps{border-left:2px solid var(--border);padding-left:12px;margin-bottom:10px}
+  .pn{font-size:11px;color:var(--muted);margin-bottom:2px;font-family:'IBM Plex Mono',monospace}
+  .pt{font-size:13px;font-weight:500;margin-bottom:3px}
+  .ph{font-size:12px;color:var(--muted);font-style:italic}
+  .ts{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+  .ts:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+  .tt{font-size:13px;font-weight:500;margin-bottom:6px}
+  .ta{background:var(--bg);border-radius:4px;padding:10px 12px;font-size:12px;color:#4A4A46;font-style:italic;margin-bottom:6px;border-left:2px solid var(--border)}
+  .tq{font-size:12px;color:var(--muted)}
+  .tq ul{padding-left:16px}
+  .tq li{margin-bottom:2px}
+  .ds{margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+  .dl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px}
+  .di{font-size:12px;padding:4px 0 4px 12px;border-left:2px solid var(--border);margin-bottom:4px}
+  .cl{display:flex;flex-direction:column;gap:6px}
+  .ci{display:flex;align-items:flex-start;gap:8px}
+  .ci input{margin-top:2px;flex-shrink:0}
+  .clbl{font-size:13px}
+  .creq{font-size:11px;color:#991B1B;margin-left:4px}
+  .copt{font-size:11px;color:var(--muted);margin-left:4px}
+  .dce-acts{display:flex;gap:8px;margin-top:16px}
+  .btn-da{flex:1;padding:9px;border:1px solid var(--border);border-radius:4px;background:transparent;font-family:'IBM Plex Sans',sans-serif;font-size:13px;cursor:pointer;transition:background .12s}
+  .btn-da:hover{background:var(--bg)}
+  .rb{font-size:13px;line-height:1.6;padding:10px 12px;background:var(--bg);border-radius:4px;border-left:2px solid var(--border);margin-bottom:12px}
+  @media(max-width:640px){header{padding:20px 20px 0}.header-top{flex-direction:column;align-items:flex-start;padding-bottom:16px}.toolbar{padding:12px 20px}main{padding:16px 20px 40px;grid-template-columns:1fr}.dce-container{padding:20px}.sg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="header-left">
+      <h1>Symbiose — Veille &amp; Analyse AO</h1>
+      <p>Mis à jour le 31/08/2026 à 13h31</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-block"><span class="stat-val">33</span><span class="stat-lbl">Opportunités</span></div>
+      <div class="stat-block"><span class="stat-val">0</span><span class="stat-lbl">Urgentes</span></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('veille',this)">Veille marchés</button>
+    <button class="tab-btn" onclick="switchTab('dce',this)">Analyser un DCE</button>
+  </div>
+</header>
+
+<!-- TAB VEILLE -->
+<div id="tab-veille" class="tab-panel active">
+  <div class="toolbar">
+    <span class="toolbar-label">Filtrer</span>
+    <button class="filter-btn active" data-filter="all">Tous</button>
+    <div class="sep"></div>
+    <button class="filter-btn" data-filter="type:Etude-Environnementale">Étude environnementale</button>
+    <button class="filter-btn" data-filter="type:AMO-Enviro">AMO Enviro</button>
+    <button class="filter-btn" data-filter="type:Mesures-Compensatoires">Mesures compensatoires</button>
+    <button class="filter-btn" data-filter="type:Diagnostic-Ecologique">Diagnostic écologique</button>
+    <button class="filter-btn" data-filter="type:Travaux-Restauration">Travaux / Restauration</button>
+    <div class="sep"></div>
+    <button class="filter-btn" data-filter="urg:haute">Urgent</button>
+    <button class="filter-btn" data-filter="compens:1">Compensation +</button>
+  </div>
+  <main id="grid">
+    
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-high">10</div>
+        </div>
+        <div>
+          <div class="card-objet">Arboretum phase 3</div>
+          <div class="card-acheteur">Ville de Portes lès Valence</div>
+        </div>
+        <div class="card-resume">Création de la phase 3 d'un arboretum par la Ville de Portes lès Valence, incluant plantations et aménagements paysagers. Mission de restauration écologique et de création d'espaces de biodiversité urbaine.</div>
+        <div class="card-alert">Vérifier l'implication requise en phase de conception/suivi écologique et les mesures de compensation associées à la destruction potentielle de milieux existants.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-17</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83657" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Diagnostic-Ecologique" data-urgence="faible" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-diag">Diagnostic éco.</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-high">10</div>
+        </div>
+        <div>
+          <div class="card-objet">RN2 – Laon-Avesnes - Déviation de La Capelle Diagnostic faune, flore et habitats – Identification zones humides du fuseau Est</div>
+          <div class="card-acheteur">DREAL Hauts de France</div>
+        </div>
+        <div class="card-resume">Diagnostic complet faune, flore, habitats et zones humides pour la déviation de la RN2 entre Laon et Avesnes à La Capelle. Mission d'étude environnementale stratégique en phase amont de projet d'infrastructure routière majeure.</div>
+        <div class="card-alert">Délai de réponse très long (octobre 2026), vérifier les conditions de marché et les éventuelles reconductions.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-10-16</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-82538" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Mesures-Compensatoires" data-urgence="moyenne" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-compens">Mesures compens.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-high">10</div>
+        </div>
+        <div>
+          <div class="card-objet">Restauration et entretien de parcelles en Mesures Compensatoires sur des propriétés départementales, communales ou privées</div>
+          <div class="card-acheteur">Département de la Sarthe</div>
+        </div>
+        <div class="card-resume">Marché de restauration et entretien de parcelles constituant des mesures compensatoires sur propriétés mixtes (départementales, communales, privées) en Sarthe. Mission de mise en œuvre opérationnelle de mesures écologiques de compensation.</div>
+        <div class="card-alert">Montant et date limite non renseignés, vérifier les détails du cahier des charges pour confirmer l'étendue géographique et les espèces/habitats concernés.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83444" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Diagnostic-Ecologique" data-urgence="moyenne" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-diag">Diagnostic éco.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-high">10</div>
+        </div>
+        <div>
+          <div class="card-objet">Expertises faune flore habitat et mise en oeuvre de la réglementation liée à la biodiversité sur le réseau routier géré par la DIR-EST périmètres Région Grand Est et État</div>
+          <div class="card-acheteur">Direction Interdépartementale des Routes Est</div>
+        </div>
+        <div class="card-resume">Marché d'expertises en faune-flore-habitat et mise en œuvre de la réglementation biodiversité sur le réseau routier DIR-EST. Mission d'accompagnement écologique multi-sites en région Grand Est couvrant diagnostics, conformité réglementaire et mesures associées.</div>
+        <div class="card-alert">Marché cadre potentiellement de longue durée - clarifier les volumes d'études et délais de mobilisation par site. Vérifier les modalités de coordination entre expertises écologiques et maîtrise d'ouvrage routière.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-82735" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Mesures-Compensatoires" data-urgence="moyenne" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-compens">Mesures compens.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-high">10</div>
+        </div>
+        <div>
+          <div class="card-objet">RÉALISATION DES TRAVAUX D'AMÉNAGEMENTS DES MESURES COMPENSATOIRES SUR DES TERRAINS DU GRAND PORT MARITIME DE DUNKERQUE DANS LE CADRE DES PROJETS D'AMÉNAGEMENT EN COURS OU À VENIR SUR LE DOMAINE DU...</div>
+          <div class="card-acheteur">GRAND PORT MARITIME DE DUNKERQUE</div>
+        </div>
+        <div class="card-resume">Réalisation de travaux d'aménagements compensatoires sur les terrains du Grand Port Maritime de Dunkerque, dans le cadre de projets d'aménagement en cours ou à venir. Mission directement liée à la mise en œuvre de mesures ERC pour des projets portuaires.</div>
+        <div class="card-alert">Procédure négociée - vérifier les modalités d'accès et les critères de sélection. Montant non communiqué - demander clarification budget. Domaine portuaire complexe, coordination probable avec d'autres intervenants.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Négociée</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83102" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="moyenne" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            
+          </div>
+          <div class="score-ring score-high">10</div>
+        </div>
+        <div>
+          <div class="card-objet">Travaux de restauration et gestion de la végétation des zones humides sur le bassin versant de la Divette</div>
+          <div class="card-acheteur">Communauté d'agglomération du Cotentin</div>
+        </div>
+        <div class="card-resume">Travaux de restauration et gestion de la végétation sur zones humides du bassin versant de la Divette, pilotés par la Communauté d'agglomération du Cotentin. Mission d'aménagement écologique et de gestion durable des milieux humides.</div>
+        <div class="card-alert">Absence de montant et date limite non précisée - clarifier le budget et le calendrier de réalisation avant réponse.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure NC</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83699" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Etude-Environnementale" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-etude">Étude env.</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-high">10</div>
+        </div>
+        <div>
+          <div class="card-objet">Étude globale des cours d'eau du PAPI Strasbourg Confluences</div>
+          <div class="card-acheteur">Eurométropole de Strasbourg</div>
+        </div>
+        <div class="card-resume">Étude globale et approfondie des cours d'eau du PAPI Strasbourg Confluences, couvrant diagnostics écologiques, inventaires faune/flore et évaluation environnementale. Mission d'AMO environnemental et de diagnostic biodiversité directement alignée avec l'accompagnement en phase de développement et les missions de diagnostic écologique de Symbiose.</div>
+        <div class="card-alert">Vérifier l'étendue géographique exacte du PAPI, les objectifs spécifiques de gestion des cours d'eau et les mesures de compensation écologique potentiellement requises.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-29</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-80579" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Etude-Environnementale" data-urgence="faible" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-etude">Étude env.</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-high">9</div>
+        </div>
+        <div>
+          <div class="card-objet">Gare Meuse TGV - Travaux d'aménagement d’un parking et d’un espace paysager arborescent au Nord de la LGV</div>
+          <div class="card-acheteur">Département de la Meuse</div>
+        </div>
+        <div class="card-resume">Aménagement d'un parking et d'un espace paysager arborescent à la Gare Meuse TGV incluant une composante environnementale et écologique significative. Le projet implique une gestion des espaces verts et possiblement des études d'impact liées à la création d'espace arborescent.</div>
+        <div class="card-alert">Absence de date limite fournie, montant non spécifié, nécessité de clarifier le contenu exact du volet environnemental et les obligations réglementaires (impacts biodiversité, mesures compensatoires potentielles).</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure NC</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83837" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Autorisations-Reglementaires" data-urgence="moyenne" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-diag">Autorisations</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            
+          </div>
+          <div class="score-ring score-high">9</div>
+        </div>
+        <div>
+          <div class="card-objet">Etudes préalables à la déclaration au titre de la loi sur l'eau</div>
+          <div class="card-acheteur">Direction Interdépartementale des Routes Est</div>
+        </div>
+        <div class="card-resume">Etudes préalables pour une déclaration loi sur l'eau portée par la Direction Interdépartementale des Routes Est. Mission d'accompagnement réglementaire en phase de développement d'un projet routier avec volet environnemental et ressources en eau.</div>
+        <div class="card-alert">Vérifier le périmètre exact de l'étude (impacts sur milieux aquatiques, zones humides, continuité écologique). Confirmer si mesures ERC incluses ou étude uniquement.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-82039" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-high">9</div>
+        </div>
+        <div>
+          <div class="card-objet">Travaux d'aménagement en faveur de l'avifaune sur le site de l'étang de la Pouge (87) - Création d'îlots de biodiversité et mise en place de perchoirs</div>
+          <div class="card-acheteur">Conseil Départemental Haute-Vienne</div>
+        </div>
+        <div class="card-resume">Aménagement complet d'un étang en faveur de l'avifaune incluant création d'îlots de biodiversité et installation de perchoirs. Mission de restauration écologique directement alignée avec les interventions de génie écologique et renaturation.</div>
+        <div class="card-alert">Vérifier les modalités de coordination écologique (MOE) et les mesures de suivi post-travaux qui pourraient nécessiter un accompagnement complémentaire.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Adaptée</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-30</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-84366" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-high">9</div>
+        </div>
+        <div>
+          <div class="card-objet">Maitrise d'oeuvre relative à la réalisation de travaux de renaturation du ruisseau de la Garde sur la commune de Chambles</div>
+          <div class="card-acheteur">Loire Forez agglomération</div>
+        </div>
+        <div class="card-resume">Maîtrise d'œuvre pour la renaturation du ruisseau de la Garde sur Chambles, pilotée par Loire Forez agglomération. Mission de restauration écologique fluviale alignée aux compétences de Symbiose en génie écologique et renaturation.</div>
+        <div class="card-alert">Vérifier les délais de mise en œuvre et la composition du lot compensatoire associé au projet.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Adaptée</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-30</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83480" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-high">9</div>
+        </div>
+        <div>
+          <div class="card-objet">Travaux de désamiantage, de démolition, de génie écologique, de renaturation et de restauration sur l'Espace Naturel Sensible de la Poudrerie d'Esquerdes</div>
+          <div class="card-acheteur">SYNDICAT MIXTE EDEN62</div>
+        </div>
+        <div class="card-resume">Marché de travaux de génie écologique, renaturation et restauration sur un Espace Naturel Sensible incluant désamiantage et démolition. Mission directement alignée avec l'expertise en restauration écologique et renaturation de Symbiose.</div>
+        <div class="card-alert">Vérifier les conditions d'accès (capacités techniques en démolition/désamiantage), les délais de réalisation et les modalités de coordination avec les mesures de préservation écologique.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-16</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-82063" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-high">9</div>
+        </div>
+        <div>
+          <div class="card-objet">Travaux de restauration écologique du ru d'Ocques à Saint Julien du Sault - Moulin d'en Bas</div>
+          <div class="card-acheteur">Syndicat Mixte Yonne Médian</div>
+        </div>
+        <div class="card-resume">Travaux de restauration écologique d'un cours d'eau (ru d'Ocques) incluant likely des mesures de renaturation et de gestion hydromorphologique. Mission d'envergure portée par une structure publique de gestion de ressources naturelles.</div>
+        <div class="card-alert">Vérifier l'inclusion de phase de suivi écologique post-travaux et de coordination des mesures compensatoires associées; clarifier le périmètre exact des interventions (génie écologique vs. génie civil).</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-09</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-81472" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Diagnostic-Ecologique" data-urgence="moyenne" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-diag">Diagnostic éco.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            
+          </div>
+          <div class="score-ring score-high">9</div>
+        </div>
+        <div>
+          <div class="card-objet">Cartographie des habitats naturels terrestres d’un site Natura 2000 en 2026  Estuaire de Seine</div>
+          <div class="card-acheteur">DREAL NORMANDIE</div>
+        </div>
+        <div class="card-resume">Cartographie complète des habitats naturels terrestres d'un site Natura 2000 en Estuaire de Seine. Mission d'inventaire et de caractérisation écologique directement alignée avec les obligations de gestion et de suivi des sites désignés.</div>
+        <div class="card-alert">Site Natura 2000 implique coordination possible avec gestionnaires, deadline non précisée, montant non renseigné.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-80589" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Diagnostic-Ecologique" data-urgence="moyenne" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-diag">Diagnostic éco.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-high">8</div>
+        </div>
+        <div>
+          <div class="card-objet">ENTRETIEN DU PATRIMOINE ARBORE DE LA VILLE D'ATHIS-MONS</div>
+          <div class="card-acheteur">Commune d'Athis-Mons</div>
+        </div>
+        <div class="card-resume">Marche d'entretien du patrimoine arbore municipal incluant potentiellement des diagnostics ecologiques et des mesures de preservation de la biodiversite urbaine. Mission connexe avec composante environnementale significative liee a la gestion et la conservation des espaces verts.</div>
+        <div class="card-alert">Absence de montant et de date limite specifiques; clarifier le volet diagnostic/inventaire arbore versus travaux simples d'entretien; verifier si des mesures compensatoires ou de renaturation sont incluses.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-82467" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Etude-Environnementale" data-urgence="faible" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-etude">Étude env.</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-high">8</div>
+        </div>
+        <div>
+          <div class="card-objet">Démarche de réduction de la vulnérabilité des enjeux en zone inondable - PEP Roanne et Forez (3 lots)</div>
+          <div class="card-acheteur">Etablissement Public Loire</div>
+        </div>
+        <div class="card-resume">Démarche de réduction de la vulnérabilité des enjeux en zone inondable portée par Établissement Public Loire sur le PEP Roanne et Forez. Mission connexe combinant gestion des risques naturels et volet environnemental significatif lié à la protection des espaces et espèces en zones inondables.</div>
+        <div class="card-alert">Vérifier si les lots incluent un volet écologique/biodiversité clair ou si focus principal est uniquement gestion hydraulique/risques. Montant non indiqué : affiner la portée du projet.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-10-02</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-82508" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Etude-Environnementale" data-urgence="moyenne" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-etude">Étude env.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            
+          </div>
+          <div class="score-ring score-high">8</div>
+        </div>
+        <div>
+          <div class="card-objet">Accord cadre à bons de commande passé par lots séparés
+Etudes préalables pour la renaturation de la friche Solano en vue de la réalisation d'une esplanade sport-tourisme-loisirs.</div>
+          <div class="card-acheteur">SHEMA au nom et pour le compte de la Communauté de Communes de la Vallée de la Sarthe</div>
+        </div>
+        <div class="card-resume">Accord cadre pour études préalables de renaturation d'une friche en esplanade sport-tourisme-loisirs. Mission incluant diagnostics écologiques, dossiers réglementaires et mesures de restauration écologique.</div>
+        <div class="card-alert">Clarifier le périmètre exact des études (diagnostics biodiversité, dossiers PC, mesures ERC) et les modalités de coordination avec les phases de travaux.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure NC</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83690" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Suivi-Exploitation" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Suivi Exploitation</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-high">8</div>
+        </div>
+        <div>
+          <div class="card-objet">Suivis sédimentaires et topo-bathymétriques-Marais de Beausssais (22)-Baie Authie Nord (62) interreg MANABAS COAST Intégrer les Solutions Fondées sur la Nature dans les systèmes côtiers</div>
+          <div class="card-acheteur">CELRL 17</div>
+        </div>
+        <div class="card-resume">Mission de suivi sédimentaire et topo-bathymétrique sur deux sites côtiers (Marais de Beaussais et Baie Authie Nord) dans le cadre du programme INTERREG MANABAS COAST axé sur l'intégration de solutions fondées sur la nature. Accompagnement scientifique du suivi écologique et géomorphologique des zones humides et milieux côtiers.</div>
+        <div class="card-alert">Délai soumission très long (2026), vérifier les modalités techniques de mesure et les partenaires impliqués dans MANABAS COAST.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-04</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83146" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Mesures-Compensatoires" data-urgence="moyenne" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-compens">Mesures compens.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            
+          </div>
+          <div class="score-ring score-high">8</div>
+        </div>
+        <div>
+          <div class="card-objet">Moe de conception de l'aménagement écologique et paysager à base de sédiments traités à Mondeville</div>
+          <div class="card-acheteur">Syndicat Mixte Ports de Normandie</div>
+        </div>
+        <div class="card-resume">Mission de MOE pour la conception d'un aménagement écologique et paysager utilisant des sédiments traités à Mondeville. Accompagnement de maître d'ouvrage pour la mise en œuvre de solutions de restauration/renaturation intégrant gestion des matériaux.</div>
+        <div class="card-alert">Vérifier les spécificités du traitement des sédiments et les contraintes réglementaires associées (qualité environnementale, acceptabilité écologique).</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure NC</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83002" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-high">8</div>
+        </div>
+        <div>
+          <div class="card-objet">Renaturation d'un espace boisé - Parc de la Villa Mary</div>
+          <div class="card-acheteur">Commune de Viry</div>
+        </div>
+        <div class="card-resume">Renaturation d'un espace boisé au Parc de la Villa Mary porté par la Commune de Viry. Mission de restauration écologique/renaturation directement alignée avec les compétences de Symbiose en restauration d'habitats naturels et gestion écologique.</div>
+        <div class="card-alert">Montant non spécifié; vérifier les éventuels volets d'études préalables ou de suivi écologique intégrés aux travaux.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-18</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-82529" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Diagnostic-Ecologique" data-urgence="faible" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-diag">Diagnostic éco.</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-mid">7</div>
+        </div>
+        <div>
+          <div class="card-objet">26MC0045AOO - PRESTATIONS D'INVENTAIRE/DIAGNOSTIC ET DE CONTROLE VISUELS DES ARBRES EN PIED A PIED ET DES ZONES ARBOREES VILLE DE TOULOUSE ET TOULOUSE METROPOLE - ANNEES 2026 A 2030</div>
+          <div class="card-acheteur">Toulouse Métropole</div>
+        </div>
+        <div class="card-resume">Inventaire et diagnostic des arbres en pied à pied et des zones arborisées sur le territoire de Toulouse et Toulouse Métropole pour la période 2026-2030. Mission de contrôle visuel et d'évaluation de l'état du patrimoine arboré urbain.</div>
+        <div class="card-alert">Mission de diagnostic arboré urbain : peu de volet compensatoire ou restauration écologique ; focus sur l'inventaire technique plutôt que biodiversité générale ; risque de confusion avec gestion/exploitation forestière.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-83225" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-mid">7</div>
+        </div>
+        <div>
+          <div class="card-objet">Adaptation et modernisation des infrastructures d’expérimentation et de production de pépinière UNITE EXPERIMENTALE FORET DE PIERROTON - INRAE de Cestas (33)</div>
+          <div class="card-acheteur">INRAE Centre Nouvelle Aquitaine - Bordeaux</div>
+        </div>
+        <div class="card-resume">Adaptation et modernisation des infrastructures de pépinière forestière à l'unité expérimentale INRAE de Pierroton. Projet mixte combinant travaux de mise à niveau des installations avec potentiel composante environnementale liée à la production forestière.</div>
+        <div class="card-alert">Clarifier le volet environnemental réel (restauration écologique, mesures compensatoires ou simple modernisation technique). Vérifier si diagnostics biodiversité ou études d'impact sont inclus.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-23</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-81329" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Diagnostic-Ecologique" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-diag">Diagnostic éco.</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-mid">7</div>
+        </div>
+        <div>
+          <div class="card-objet">COMMUNE DE MARTIGUES - EXPERTISE DU PATRIMOINE ARBORÉ</div>
+          <div class="card-acheteur">COMMUNE DE MARTIGUES</div>
+        </div>
+        <div class="card-resume">Expertise du patrimoine arboré communal de Martigues incluant diagnostic et inventaire de la flore ligneuse. Mission mixte avec composante écologique/biodiversité significative dans une approche de gestion environnementale du territoire.</div>
+        <div class="card-alert">Montant non spécifié - vérifier l'envergure réelle de l'étude. Clarifier si inventaire faune/flore associé ou expertise arborée uniquement.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-29</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-81639" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="AMO-Enviro" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-amo">AMO Enviro</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-mid">7</div>
+        </div>
+        <div>
+          <div class="card-objet">Mission de maîtrise d’œuvre GeMAPI sur le territoire de la CADEMA</div>
+          <div class="card-acheteur">Communauté d'Agglomération de Dembéni-Mamoudzou (976)</div>
+        </div>
+        <div class="card-resume">Mission de maîtrise d'œuvre GeMAPI (gestion des milieux aquatiques et prévention des inondations) sur le territoire de la CADEMA à Mayotte. Accompagnement technique pour la gestion intégrée des cours d'eau et zones humides avec composante environnementale significative.</div>
+        <div class="card-alert">Vérifier le périmètre exact des interventions GeMAPI et la part dédiée aux mesures écologiques/restauration de milieux aquatiques versus travaux d'infrastructure hydraulique pure.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-21</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-81636" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Etude-Environnementale" data-urgence="moyenne" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-etude">Étude env.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            
+          </div>
+          <div class="score-ring score-mid">7</div>
+        </div>
+        <div>
+          <div class="card-objet">Rd 907 Pr 60+000 Le Cabanis - confortement berge ruisseau</div>
+          <div class="card-acheteur">Conseil départemental du Gard</div>
+        </div>
+        <div class="card-resume">Étude de confortement de berge de ruisseau sur la RD 907 au Gard, incluant une composante environnementale liée aux milieux aquatiques. Mission connexe combinant travaux d'infrastructure et enjeux écologiques significatifs.</div>
+        <div class="card-alert">Absence de date limite et montant non renseigné. Clarifier le périmètre exact des études environnementales (études d'impact, mesures ERC) et les contraintes réglementaires (loi sur l'eau, espèces protégées potentielles).</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure NC</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-84437" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="AMO-Enviro" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-amo">AMO Enviro</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-mid">7</div>
+        </div>
+        <div>
+          <div class="card-objet">Réalisation d'une étude et appui au maître d'ouvrage pour animer une gouvernance de projet autour d'un potentiel conflit d'usage de l'eau de la Garonne</div>
+          <div class="card-acheteur">ARS33</div>
+        </div>
+        <div class="card-resume">Mission d'étude et d'accompagnement du maître d'ouvrage pour gérer la gouvernance d'un projet touchant à la gestion de l'eau de la Garonne et aux conflits d'usage. Volet environnemental connexe centré sur la ressource en eau et les enjeux d'usage.</div>
+        <div class="card-alert">Scope flou sur le contenu exact de l'étude environnementale; risque de mission davantage orientée gouvernance/coordination que expertise écologique stricto sensu; vérifier les livrables attendus concernant l'eau et la biodiversité.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-10-02</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-84129" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Etude-Environnementale" data-urgence="moyenne" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-etude">Étude env.</span>
+            
+            <span class="badge badge-urg-moy">Moyen terme</span>
+            
+            
+          </div>
+          <div class="score-ring score-mid">7</div>
+        </div>
+        <div>
+          <div class="card-objet">Etudes pour le confortement des plages de Lorient Agglomération - Accueil des sédiments issus du dragage</div>
+          <div class="card-acheteur">Lorient Agglomération</div>
+        </div>
+        <div class="card-resume">Études pour le confortement des plages de Lorient Agglomération avec gestion des sédiments de dragage. Mission mixte combinant aménagement côtier et volet environnemental/écologique significatif lié à la gestion des matériaux marins.</div>
+        <div class="card-alert">Vérifier le volet écologique exact (impacts sur habitats marins/côtiers, mesures compensatoires éventuelles, suivi environnemental du chantier). Clarifier la part des études environnementales vs études techniques/géotechniques.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure NC</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-82776" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Autre" data-urgence="faible" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-autre">Autre</span>
+            <span class="badge badge-urg-fai">Standard</span>
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-mid">6</div>
+        </div>
+        <div>
+          <div class="card-objet">Entretien et exploitation du patrimoine arboré urbain et forestier d'Eau de Paris</div>
+          <div class="card-acheteur">EAU DE PARIS</div>
+        </div>
+        <div class="card-resume">Marché d'entretien et d'exploitation du patrimoine arboré urbain et forestier d'Eau de Paris. Mission de gestion courante de la végétation sans composante d'étude écologique, diagnostic ou mesures compensatoires.</div>
+        <div class="card-alert">Vérifier si le marché inclut des volets d'inventaire forestier, d'évaluation écologique ou de restauration écologique qui pourraient justifier une intervention Symbiose.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Négociée</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-18</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-80703" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Etude-Environnementale" data-urgence="faible" data-compens="1">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-etude">Étude env.</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            <span class="badge badge-compens-boost">Compensation +</span>
+          </div>
+          <div class="score-ring score-mid">6</div>
+        </div>
+        <div>
+          <div class="card-objet">Prestations d'études visant à élaborer, mettre à jour et évaluer le Schéma Directeur des Eaux Usées communautaire de Perpignan Méditerranée Métropole</div>
+          <div class="card-acheteur">Perpignan Méditerranée Métropole Communauté Urbaine</div>
+        </div>
+        <div class="card-resume">Élaboration et mise à jour du schéma directeur des eaux usées pour la métropole de Perpignan. Mission d'étude technique sur la gestion des eaux usées avec composante environnementale secondaire.</div>
+        <div class="card-alert">Mission centrée sur l'infrastructure d'assainissement plutôt que sur la biodiversité ou les mesures compensatoires écologiques spécifiques à Symbiose.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-24</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-81059" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-mid">6</div>
+        </div>
+        <div>
+          <div class="card-objet">Plantation et entretien du patrimoine arboré des propriétés communales</div>
+          <div class="card-acheteur">Ville de Longjumeau</div>
+        </div>
+        <div class="card-resume">Marché de plantation et d'entretien du patrimoine arboré communal. Composante environnementale présente mais générique sans diagnostic écologique ou mesures compensatoires structurées.</div>
+        <div class="card-alert">Vérifier si une étude préalable de biodiversité ou un volet de restauration écologique est intégré ; clarifier les espèces plantées et les objectifs écologiques.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-24</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-80939" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Travaux-Restauration" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-travaux">Travaux Restauration</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-mid">6</div>
+        </div>
+        <div>
+          <div class="card-objet">TRAVAUX DE REHAUSSE DE LA COTE DE RETENUE NORMALE ET MISE EN CONFORMITE DE L'EVACUATEUR DE CRUE DU BARRAGE D'E COTULE</div>
+          <div class="card-acheteur">Office d'Equipement Hydraulique de Corse</div>
+        </div>
+        <div class="card-resume">Travaux de rehausse de la cote de retenue normale et mise en conformite de l'evacuateur de crue d'un barrage en Corse. Mission d'infrastructure hydraulique avec potentiels impacts environnementaux et ecologiques a evaluer.</div>
+        <div class="card-alert">Absence de date limite et montant non precise. Verifier si etudes d'impact environnemental ou mesures compensatoires ecologiques sont incluses. Risques d'impacts sur continuité écologique et milieux aquatiques.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-80627" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="AMO-Enviro" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-amo">AMO Enviro</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-mid">6</div>
+        </div>
+        <div>
+          <div class="card-objet">2025-47-F - ACCORD CADRE DE MAITRISE D'OEUVRE PAYSAGERE / INFRASTRUCTURE ET ASSISTANCE ENVIRONNEMENTALE POUR L'AMENAGEMENT DU SITE DU DOMAINE DE CHAMPOS A SAINT DONAT SUR L'HERBASSE</div>
+          <div class="card-acheteur">ARCHE AGGLO</div>
+        </div>
+        <div class="card-resume">Accord-cadre de maîtrise d'œuvre paysagère et assistance environnementale pour l'aménagement du domaine de Champos. Marché regroupant volets paysagers et environnementaux liés à un projet d'aménagement de site.</div>
+        <div class="card-alert">Clarifier le périmètre exact des missions environnementales (diagnostics, mesures ERC, suivi) vs. missions paysagères ; vérifier les phases concernées (conception, travaux, exploitation).</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">—</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-80953" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+      <div class="card" data-type="Etude-Environnementale" data-urgence="faible" data-compens="0">
+        <div class="card-top">
+          <div class="card-badges">
+            <span class="badge badge-etude">Étude env.</span>
+            
+            <span class="badge badge-urg-fai">Standard</span>
+            
+          </div>
+          <div class="score-ring score-mid">6</div>
+        </div>
+        <div>
+          <div class="card-objet">26M0215AOO - ACTUALISATION DE L'ÉVALUATION ENVIRONNEMENTALE DU PLUi-H DE TOULOUSE MÉTROPOLE DANS LE CADRE DE SA 1ère MODIFICATION</div>
+          <div class="card-acheteur">Toulouse Métropole</div>
+        </div>
+        <div class="card-resume">Actualisation de l'évaluation environnementale du PLUi-H de Toulouse Métropole dans le cadre de sa 1ère modification. Mission d'étude environnementale connexe avec composante écologique significative liée à la planification territoriale.</div>
+        <div class="card-alert">Délai de réponse très long (septembre 2026), clarifier le périmètre exact du volet biodiversité/écologique dans cette actualisation PLUi-H.</div>
+        <div class="card-meta">
+          <div class="meta-item"><span class="meta-lbl">Montant</span><span class="meta-val">N/C</span></div>
+          <div class="meta-item"><span class="meta-lbl">Procédure</span><span class="meta-val">Procédure Ouverte</span></div>
+          <div class="meta-item"><span class="meta-lbl">Date limite</span><span class="meta-val">2026-09-25</span></div>
+          <a class="card-link" href="https://www.boamp.fr/pages/avis/?q=idweb:26-80915" target="_blank" rel="noopener">Voir l'avis →</a>
+        </div>
+      </div>
+      
+    
+  </main>
+</div>
+
+<!-- TAB DCE -->
+<div id="tab-dce" class="tab-panel">
+  <div class="dce-container">
+    <div class="dce-intro">
+      <h2>Analyser un DCE</h2>
+      <p>Dépose le RC et/ou le CCTP pour générer une fiche de synthèse, un plan de mémoire et une trame de réponse adaptée au positionnement Symbiose (génie écologique).</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-size:12px;font-weight:500;margin-bottom:6px">Clé API Anthropic</div>
+      <div class="key-row">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+        <button class="btn-save" onclick="saveKey()">Enregistrer</button>
+      </div>
+      <div id="keyStatus"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Stockée dans ton navigateur uniquement.</div>
+    </div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="dceFileInput" accept=".pdf" multiple />
+      <div class="drop-icon">📄</div>
+      <div class="drop-title">Glisse tes PDF ici</div>
+      <div class="drop-sub">RC, CCTP, AE — plusieurs fichiers acceptés</div>
+    </div>
+    <div class="file-list-dce" id="dceFileList"></div>
+    <button class="btn-analyze" id="btnAnalyze" disabled>Analyser le DCE</button>
+    <div id="dceProgress" style="display:none"></div>
+    <div id="dceError"></div>
+    <div id="dceResults"></div>
+  </div>
+</div>
+
+<script>
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const f=btn.dataset.filter;
+    document.querySelectorAll('.card').forEach(card=>{
+      if(f==='all'){card.dataset.hidden='false';return;}
+      const[k,v]=f.split(':');
+      let m=false;
+      if(k==='type')m=card.dataset.type===v;
+      if(k==='urg')m=card.dataset.urgence===v;
+      if(k==='compens')m=card.dataset.compens===v;
+      card.dataset.hidden=m?'false':'true';
+    });
+  });
+});
+
+function saveKey(){
+  const v=document.getElementById('apiKeyInput').value.trim();
+  if(v.startsWith('sk-ant-')){
+    localStorage.setItem('symbiose_key',v);
+    showKS(true);
+    document.getElementById('apiKeyInput').value='';
+    updBtn();
+  } else {
+    document.getElementById('keyStatus').innerHTML='<span class="key-status key-missing">Format invalide</span>';
+  }
+}
+function showKS(ok){
+  document.getElementById('keyStatus').innerHTML=ok
+    ?'<span class="key-status key-ok">✓ Clé enregistrée</span>'
+    :'<span class="key-status key-missing">Aucune clé — renseigne ta clé API Anthropic</span>';
+}
+window.addEventListener('load',()=>{showKS(!!localStorage.getItem('symbiose_key'));updBtn();});
+
+const dceState={files:[]};
+const dz=document.getElementById('dropZone');
+const fi=document.getElementById('dceFileInput');
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');addF([...e.dataTransfer.files]);});
+fi.addEventListener('change',()=>addF([...fi.files]));
+
+function addF(files){
+  files.filter(f=>f.type==='application/pdf').forEach(f=>{
+    if(!dceState.files.find(x=>x.name===f.name))dceState.files.push(f);
+  });
+  renderFL();
+}
+function removeF(i){dceState.files.splice(i,1);renderFL();}
+function renderFL(){
+  document.getElementById('dceFileList').innerHTML=dceState.files.map((f,i)=>`
+    <div class="file-item-dce">
+      <span>📋</span>
+      <span class="file-name-dce">${f.name}</span>
+      <span class="file-size-dce">${(f.size/1024).toFixed(0)} Ko</span>
+      <button class="file-rm" onclick="removeF(${i})">✕</button>
+    </div>`).join('');
+  updBtn();
+}
+function updBtn(){
+  document.getElementById('btnAnalyze').disabled=dceState.files.length===0||!localStorage.getItem('symbiose_key');
+}
+
+async function f2b64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+document.getElementById('btnAnalyze').addEventListener('click',async()=>{
+  const apiKey=localStorage.getItem('symbiose_key');
+  if(!apiKey)return;
+  document.getElementById('btnAnalyze').disabled=true;
+  document.getElementById('dceError').innerHTML='';
+  document.getElementById('dceResults').innerHTML='';
+  const prog=document.getElementById('dceProgress');
+  prog.style.display='block';
+  prog.innerHTML='<div class="dce-progress"><div class="spinner"></div><span>Lecture des documents...</span></div>';
+  try{
+    const contents=[];
+    for(const f of dceState.files){
+      const b=await f2b64(f);
+      contents.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:b}});
+    }
+    prog.innerHTML='<div class="dce-progress"><div class="spinner"></div><span>Analyse Claude en cours — 1 à 2 minutes...</span></div>';
+    const PROMPT=`Tu es expert en réponse aux marchés publics français, spécialisé en génie écologique, diagnostics et études environnementales, mesures compensatoires (ERC/ERCA) et biodiversité.\nAnalyse ce DCE et retourne UNIQUEMENT un JSON valide (pas de markdown) :\n{"synthese":{"objet":"","acheteur":"","procedure":"","deadline":"","montant_estime":"","duree_mission":"","criteres":[{"nom":"Valeur technique","poids":60},{"nom":"Prix","poids":40}],"resume_besoin":""},"plan_memoire":[{"num":"1","titre":"","hint":""}],"trame":[{"titre":"","amorce":"","questions":["",""]}],"checklist":[{"label":"Mémoire technique","required":true}],"differenciants":[""]}\nPour la trame : adapte les amorces au positionnement Symbiose (genie ecologique, sequence ERC, diagnostics faune/flore, dossiers loi sur l'eau et derogations especes protegees, suivi ecologique long terme). Sois concret.`;
+    contents.push({type:'text',text:PROMPT});
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:4000,messages:[{role:'user',content:contents}]})
+    });
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    const raw=data.content[0].text.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(raw);
+    window._dce=parsed;
+    renderDCE(parsed);
+  }catch(e){
+    document.getElementById('dceError').innerHTML=`<div class="dce-error">Erreur : ${e.message}</div>`;
+  }finally{
+    prog.style.display='none';
+    updBtn();
+  }
+});
+
+function renderDCE(d){
+  const s=d.synthese||{};
+  const crit=(s.criteres||[]).map(c=>`<div class="cr"><span class="cn">${c.nom}</span><div class="cb"><div class="cbf" style="width:${c.poids}%"></div></div><span class="cp">${c.poids}%</span></div>`).join('');
+  const plan=(d.plan_memoire||[]).map(p=>`<div class="ps"><div class="pn">Section ${p.num}</div><div class="pt">${p.titre}</div><div class="ph">${p.hint}</div></div>`).join('');
+  const trame=(d.trame||[]).map(t=>`<div class="ts"><div class="tt">${t.titre}</div><div class="ta">${t.amorce}</div><div class="tq"><ul>${(t.questions||[]).map(q=>`<li>${q}</li>`).join('')}</ul></div></div>`).join('');
+  const diff=(d.differenciants||[]).map(x=>`<div class="di">${x}</div>`).join('');
+  const chk=(d.checklist||[]).map((c,i)=>`<div class="ci"><input type="checkbox" id="c${i}"><label class="clbl" for="c${i}">${c.label}<span class="${c.required?'creq':'copt'}">${c.required?'obligatoire':'recommandé'}</span></label></div>`).join('');
+
+  document.getElementById('dceResults').innerHTML=`
+    <div class="dce-results">
+      <div class="res-card">
+        <div class="res-hdr" onclick="tgl(this)"><span class="res-num n1">01</span><span class="res-title">Fiche de synthèse</span><span class="res-chev open">▼</span></div>
+        <div class="res-body">
+          <div class="sg">
+            <div class="si"><div class="sl">Acheteur</div><div class="sv">${s.acheteur||'—'}</div></div>
+            <div class="si"><div class="sl">Procédure</div><div class="sv">${s.procedure||'—'}</div></div>
+            <div class="si"><div class="sl">Date limite</div><div class="sv">${s.deadline||'—'}</div></div>
+            <div class="si"><div class="sl">Montant estimé</div><div class="sv">${s.montant_estime||'—'}</div></div>
+            <div class="si"><div class="sl">Durée mission</div><div class="sv">${s.duree_mission||'—'}</div></div>
+            <div class="si"><div class="sl">Objet</div><div class="sv">${s.objet||'—'}</div></div>
+          </div>
+          <div class="rb">${s.resume_besoin||''}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Critères de notation</div>
+          ${crit}
+        </div>
+      </div>
+      <div class="res-card">
+        <div class="res-hdr" onclick="tgl(this)"><span class="res-num n2">02</span><span class="res-title">Plan du mémoire technique</span><span class="res-chev open">▼</span></div>
+        <div class="res-body">${plan}</div>
+      </div>
+      <div class="res-card">
+        <div class="res-hdr" onclick="tgl(this)"><span class="res-num n3">03</span><span class="res-title">Trame de rédaction</span><span class="res-chev open">▼</span></div>
+        <div class="res-body">${trame}${diff?`<div class="ds"><div class="dl">Points différenciants Symbiose</div>${diff}</div>`:''}</div>
+      </div>
+      <div class="res-card">
+        <div class="res-hdr" onclick="tgl(this)"><span class="res-num n4">04</span><span class="res-title">Checklist des pièces</span><span class="res-chev open">▼</span></div>
+        <div class="res-body"><div class="cl">${chk}</div></div>
+      </div>
+    </div>
+    <div class="dce-acts">
+      <button class="btn-da" onclick="cpyAll()">Copier tout</button>
+      <button class="btn-da" onclick="resetDCE()">Nouvelle analyse</button>
+    </div>`;
+}
+
+function tgl(hdr){
+  hdr.nextElementSibling.classList.toggle('hidden');
+  hdr.querySelector('.res-chev').classList.toggle('open');
+}
+function resetDCE(){dceState.files=[];renderFL();document.getElementById('dceResults').innerHTML='';document.getElementById('dceError').innerHTML='';}
+function cpyAll(){
+  const d=window._dce;if(!d)return;
+  const s=d.synthese||{};
+  let t=`ANALYSE DCE — SYMBIOSE\n${'='.repeat(40)}\n\nAcheteur : ${s.acheteur}\nObjet : ${s.objet}\nDélai : ${s.deadline}\nMontant : ${s.montant_estime}\n\nBesoin : ${s.resume_besoin}\n\nCritères :\n${(s.criteres||[]).map(c=>`  - ${c.nom} : ${c.poids}%`).join('\n')}\n\nPLAN MÉMOIRE\n${'-'.repeat(20)}\n`;
+  (d.plan_memoire||[]).forEach(p=>t+=`${p.num}. ${p.titre}\n   ${p.hint}\n`);
+  t+=`\nTRAME\n${'-'.repeat(20)}\n`;
+  (d.trame||[]).forEach(x=>{t+=`\n${x.titre}\n${x.amorce}\n`;(x.questions||[]).forEach(q=>t+=`  • ${q}\n`);});
+  t+=`\nCHECKLIST\n${'-'.repeat(20)}\n`;
+  (d.checklist||[]).forEach(c=>t+=`[ ] ${c.label} (${c.required?'obligatoire':'recommandé'})\n`);
+  navigator.clipboard.writeText(t).then(()=>{
+    const btn=document.querySelector('.btn-da');
+    const orig=btn.textContent;btn.textContent='Copié !';
+    setTimeout(()=>btn.textContent=orig,2000);
+  });
+}
+</script>
+</body>
+</html>
