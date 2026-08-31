@@ -16,6 +16,22 @@ TIMEOUT  = 30
 CPV_PREFIXES = ["90700", "90711", "71313", "90721", "77310"]
 
 
+# Depuis un changement de l'API TED v3, le champ 'fields' est desormais
+# obligatoire et ne doit pas etre vide (sinon HTTP 400 "must not be empty").
+# Noms eForms (kebab-case) - cf https://docs.ted.europa.eu/ODS/latest/reuse/search-api.html
+TED_FIELDS = [
+    "publication-number",
+    "notice-title",
+    "buyer-name",
+    "buyer-country",
+    "total-value",
+    "deadline",
+    "procedure-type",
+    "notice-type",
+    "classification-cpv",
+]
+
+
 def _build_query(date_min_str: str) -> str:
     date_formatted = date_min_str.replace("-", "")
     cpv_filter = " OR ".join(f"cpv~{cpv}" for cpv in CPV_PREFIXES)
@@ -54,9 +70,10 @@ def fetch_avis_ted(lookback_days: int = LOOKBACK_DAYS) -> list[dict]:
 
     while True:
         payload = {
-            "query": _build_query(date_min),
-            "page":  page,
-            "limit": 100,
+            "query":  _build_query(date_min),
+            "fields": TED_FIELDS,
+            "page":   page,
+            "limit":  100,
         }
         try:
             r = requests.post(TED_URL, json=payload, timeout=TIMEOUT)
@@ -144,12 +161,12 @@ def _normalize(notice: dict) -> dict | None:
     if montant and montant < MONTANT_MIN:
         return None
 
-    deadline_raw = (notice.get("submission-deadline")
-                    or notice.get("DT")
-                    or notice.get("deadline"))
+    deadline_raw = (notice.get("deadline")
+                    or notice.get("submission-deadline")
+                    or notice.get("DT"))
     deadline = _get_text(deadline_raw)[:10] if deadline_raw else ""
 
-    cpv_raw = notice.get("cpv") or notice.get("PC") or []
+    cpv_raw = notice.get("classification-cpv") or notice.get("cpv") or notice.get("PC") or []
     if isinstance(cpv_raw, str):
         cpv_raw = [cpv_raw]
 
